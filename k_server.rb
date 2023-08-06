@@ -3,6 +3,7 @@
 require 'socket'
 require_relative 'kommand_parser'
 
+# Simple TCP server that accepts connections from clients and stores data
 class KServer
   def initialize
     super
@@ -46,7 +47,16 @@ class KServer
       puts "Empty request received from #{client}"
     else
       if block_given?
-        yield parser.parse(client_command)
+        parser.parse(client_command) do |command, options, err|
+          yield err unless err.empty?
+          response = if command == :set
+                       data_store[options[0]] = options[1]
+                       'OK'
+                     else
+                       data_store[options[0]]
+                     end
+          yield response
+        end
       end
     end
   end
@@ -66,4 +76,3 @@ end
 
 k_server = KServer.new
 k_server.start
-
